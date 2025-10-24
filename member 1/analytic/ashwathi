@@ -1,0 +1,45 @@
+import numpy as np
+
+def create_traffic_potential(intersection_data):
+    """
+    Returns an analytic complex potential Φ(z) = U*z + m/z
+    representing steady traffic flow near an intersection.
+
+    Parameters
+    ----------
+    intersection_data : dict
+        From shared_data.py
+
+    Returns
+    -------
+    Phi : callable
+        Function Phi(z) giving complex potential values.
+    """
+    # you can tune these later using arrival rates
+    U = 1.0
+    m = 0.5
+
+    def Phi(z):
+        z = np.asarray(z, dtype=complex)
+        return U*z + m/(z + 1e-12)   # avoid division by zero
+    return Phi
+
+
+def validate_laplace(phi_func):
+    """Numerically check that Re(Φ) satisfies Laplace’s equation."""
+    xs = np.linspace(-2, 2, 60)
+    ys = np.linspace(-2, 2, 60)
+    X, Y = np.meshgrid(xs, ys)
+    Z = X + 1j*Y
+    phi = np.real(phi_func(Z))
+    dx = xs[1]-xs[0]; dy = ys[1]-ys[0]
+    lap = ((phi[2:,1:-1]-2*phi[1:-1,1:-1]+phi[:-2,1:-1])/dx**2 +
+           (phi[1:-1,2:]-2*phi[1:-1,1:-1]+phi[1:-1,:-2])/dy**2)
+    return np.max(np.abs(lap))
+
+
+if __name__ == "__main__":
+    from shared_data import SAMPLE_INTERSECTION
+    Phi = create_traffic_potential(SAMPLE_INTERSECTION)
+    print("Φ(1+i) =", Phi(1+1j))
+    print("Max Laplace error ≈", validate_laplace(Phi))
